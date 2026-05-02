@@ -1377,9 +1377,17 @@ const ADMIN_PASSWORD = 'AISuperman';
 
 // 视感企业 logo (SVG) — 圆 + 圆角方框互锁 + 紫色小点，渐变 cyan→purple→pink→orange
 const LOGO_SVG = `<svg class="vs-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <rect x="43" y="14" width="46" height="46" rx="9" ry="9" stroke="url(#vsLogoGradient)" stroke-width="6.5" stroke-linejoin="round"/>
-  <circle cx="32" cy="60" r="24" stroke="url(#vsLogoGradient)" stroke-width="6.5"/>
-  <circle cx="78" cy="83" r="5" fill="#a78bfa"/>
+  <defs>
+    <linearGradient id="pkLogoGrad" x1="8%" y1="92%" x2="100%" y2="8%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="32%" stop-color="#a78bfa"/>
+      <stop offset="62%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="60" r="24" stroke="url(#pkLogoGrad)" stroke-width="6.5"/>
+  <rect x="43" y="14" width="46" height="46" rx="9" ry="9" stroke="url(#pkLogoGrad)" stroke-width="6.5" stroke-linejoin="round"/>
+  <circle cx="87" cy="87" r="4.5" fill="#a78bfa"/>
 </svg>`;
 
 function defaultState() {
