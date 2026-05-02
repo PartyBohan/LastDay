@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视感 · Last Day · 离职交接</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    color: #e8eaff;
+    background: linear-gradient(135deg, #0f1029 0%, #1a1040 35%, #1e1145 70%, #12203a 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { position: relative; }
+
+  /* Animated background canvas */
+  #bgCanvas {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  }
+
+  /* Section colors */
+  :root {
+    --c-general: #38bdf8;
+    --c-product: #f472b6;
+    --c-supply:  #34d399;
+    --c-cn:      #fbbf24;
+    --c-overseas:#a78bfa;
+    --c-locked:  rgba(255,255,255,0.18);
+    --c-done:    #4ade80;
+  }
+
+  /* App container */
+  #app { position: relative; z-index: 1; min-height: 100vh; }
+
+  /* ===== Welcome Screen ===== */
+  .welcome {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px;
+  }
+  .welcome-logo {
+    font-size: 64px; margin-bottom: 8px;
+    filter: drop-shadow(0 0 20px rgba(167,139,250,0.6));
+    display: flex; align-items: center; justify-content: center;
+  }
+  .welcome-logo .vs-logo { width: 88px; height: 88px; display: block; }
+  .welcome h1 {
+    font-size: 48px; font-weight: 700; margin: 8px 0 4px;
+    background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+  }
+  .welcome .sub {
+    font-size: 18px; color: #b4b8e0; margin-bottom: 4px;
+  }
+  .welcome .slogan {
+    font-size: 14px; color: #8a8eb8; margin-bottom: 32px;
+    letter-spacing: 2px;
+  }
+  .welcome-card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px; padding: 36px 40px;
+    max-width: 540px; width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .welcome-card h2 {
+    margin: 0 0 8px; font-size: 22px; font-weight: 600;
+  }
+  .welcome-card p {
+    color: #b4b8e0; font-size: 14px; line-height: 1.7; margin: 0 0 24px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block; font-size: 13px; color: #b4b8e0; margin-bottom: 8px;
+  }
+  .form-row input, .form-row select {
+    width: 100%; padding: 12px 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    color: #fff; font-size: 15px; font-family: inherit;
+    outline: none; transition: all .2s;
+  }
+  .form-row input:focus, .form-row select:focus {
+    border-color: #a78bfa;
+    background: rgba(255,255,255,0.12);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.18);
+  }
+  .form-row select option { background: #1a1040; color: #fff; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
+    color: #fff; font-weight: 600; font-size: 15px;
+    border: none; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(167,139,250,0.35);
+    transition: all .2s;
+    font-family: inherit;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(167,139,250,0.45); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn.secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: none;
+  }
+  .btn.secondary:hover { background: rgba(255,255,255,0.14); }
+  .btn.ghost { background: transparent; box-shadow: none; padding: 8px 14px; font-weight: 500; }
+  .btn.ghost:hover { background: rgba(255,255,255,0.08); transform: none; }
+  .btn.full { width: 100%; }
+
+  /* ===== Hub (main dashboard) ===== */
+  .hub-header {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: rgba(15,16,41,0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 32px;
+    display: flex; align-items: center; gap: 24px; justify-content: space-between;
+  }
+  .hub-header .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: 700;
+  }
+  .hub-header .brand-emoji {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+  }
+  .hub-header .brand-emoji .vs-logo { width: 100%; height: 100%; display: block; }
+  .hub-header .gradient-text {
+    background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hub-header .meta {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 13px; color: #b4b8e0;
+  }
+  .progress-mini {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .progress-bar {
+    width: 220px; height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #38bdf8);
+    transition: width .4s;
+  }
+
+  .hub {
+    max-width: 1200px; margin: 0 auto; padding: 32px;
+  }
+  .hub-hero {
+    text-align: center; padding: 24px 0 16px;
+  }
+  .hub-hero h1 {
+    font-size: 36px; font-weight: 700; margin: 0 0 8px;
+    background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  .hub-hero p { color: #b4b8e0; font-size: 15px; margin: 0; }
+
+  .section { margin-top: 32px; }
+  .section-title {
+    display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--accent, #a78bfa);
+    padding-left: 12px;
+  }
+  .section-title h2 {
+    margin: 0; font-size: 20px; font-weight: 600; color: #fff;
+  }
+  .section-title .desc { font-size: 13px; color: #8a8eb8; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all .25s;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent, #a78bfa);
+    opacity: .8;
+  }
+  .card:hover:not(.locked) {
+    transform: translateY(-4px) scale(1.01);
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  }
+  .card.locked {
+    cursor: not-allowed; opacity: 0.5;
+  }
+  .card.locked::before { background: var(--c-locked); }
+  .card.completed {
+    border-color: rgba(74,222,128,0.4);
+    background: rgba(74,222,128,0.05);
+  }
+  .card .emoji {
+    font-size: 36px; margin-bottom: 8px;
+    filter: drop-shadow(0 0 12px rgba(167,139,250,0.3));
+  }
+  .card h3 { margin: 0 0 6px; font-size: 17px; font-weight: 600; color: #fff; }
+  .card .card-sub { font-size: 12px; color: #b4b8e0; line-height: 1.5; margin-bottom: 12px; min-height: 36px; }
+  .card .card-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: #8a8eb8;
+  }
+  .card .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 500;
+  }
+  .badge.done { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge.locked { background: rgba(255,255,255,0.08); color: #8a8eb8; }
+  .badge.next { background: rgba(167,139,250,0.18); color: #c4b5fd; }
+  .badge.optional { background: rgba(56,189,248,0.15); color: #38bdf8; }
+  .badge.required { background: rgba(244,114,182,0.15); color: #f472b6; }
+
+  .card-lock-icon {
+    position: absolute; top: 16px; right: 16px;
+    font-size: 18px; opacity: 0.6;
+  }
+
+  /* ===== Module page ===== */
+  .module-page {
+    max-width: 880px; margin: 0 auto; padding: 32px 24px 80px;
+  }
+  .module-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #b4b8e0; text-decoration: none; font-size: 14px;
+    margin-bottom: 16px; cursor: pointer;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all .2s;
+  }
+  .module-back:hover { background: rgba(255,255,255,0.1); }
+
+  .module-header {
+    display: flex; align-items: flex-start; gap: 20px;
+    margin-bottom: 24px; padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .module-header .emoji { font-size: 56px; line-height: 1; }
+  .module-header h1 { margin: 0 0 6px; font-size: 30px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .module-header .module-tag {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 10px; font-size: 12px;
+    background: var(--accent, rgba(167,139,250,0.2));
+    color: #fff; opacity: 0.9; font-weight: 500;
+  }
+  .module-header .module-desc { color: #b4b8e0; font-size: 14px; margin-top: 8px; line-height: 1.6; }
+
+  /* Content blocks */
+  .block {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 22px 26px;
+    margin-bottom: 16px;
+  }
+  .block h2 { margin: 0 0 12px; font-size: 18px; font-weight: 600; color: #fff; }
+  .block h3 { margin: 16px 0 8px; font-size: 15px; font-weight: 600; color: #c4b5fd; }
+  .block p, .block li { color: #d8dafc; font-size: 14px; line-height: 1.75; }
+  .block p { margin: 0 0 8px; }
+  .block ul, .block ol { padding-left: 22px; margin: 8px 0; }
+  .block li { margin: 4px 0; }
+  .block strong { color: #fff; font-weight: 600; }
+  .block em { color: #fbbf24; font-style: normal; font-weight: 500; }
+
+  .callout {
+    background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(244,114,182,0.08));
+    border-left: 3px solid #a78bfa;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 13px; color: #d8dafc;
+  }
+  .callout.warning {
+    background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(244,114,182,0.06));
+    border-left-color: #fbbf24;
+  }
+  .callout.info {
+    background: linear-gradient(135deg, rgba(56,189,248,0.1), rgba(167,139,250,0.06));
+    border-left-color: #38bdf8;
+  }
+
+  table.tbl {
+    width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;
+    border-radius: 8px; overflow: hidden;
+  }
+  table.tbl th, table.tbl td {
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  table.tbl th {
+    background: rgba(167,139,250,0.15); color: #fff; font-weight: 600;
+  }
+  table.tbl td { color: #d8dafc; }
+
+  .city-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin: 12px 0;
+  }
+  .city-card {
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+  }
+  .city-card .city-name { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .city-card .city-role { font-size: 12px; color: #b4b8e0; line-height: 1.5; }
+
+  .values-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px; margin: 12px 0;
+  }
+  .value-chip {
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; text-align: center;
+  }
+  .value-chip .num {
+    display: inline-block; width: 22px; height: 22px; line-height: 22px;
+    border-radius: 50%; background: linear-gradient(135deg, #a78bfa, #f472b6);
+    color: #fff; font-size: 11px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .value-chip .name { font-size: 14px; font-weight: 600; color: #fff; display: block; }
+  .value-chip .desc { font-size: 11px; color: #8a8eb8; margin-top: 4px; }
+
+  /* Quiz */
+  .quiz {
+    background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(56,189,248,0.06));
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 16px; padding: 22px 26px;
+    margin-top: 24px;
+  }
+  .quiz h2 {
+    margin: 0 0 6px; font-size: 18px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .quiz .quiz-sub { color: #b4b8e0; font-size: 13px; margin-bottom: 16px; }
+
+  .question { margin: 18px 0; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+  .question:first-of-type { border-top: none; padding-top: 0; }
+  .question .qtext { font-size: 15px; font-weight: 500; color: #fff; margin-bottom: 12px; line-height: 1.5; }
+  .question .qtext .qnum {
+    display: inline-block; min-width: 24px; height: 24px;
+    line-height: 24px; text-align: center;
+    background: rgba(167,139,250,0.25);
+    border-radius: 50%; font-size: 12px; font-weight: 700;
+    margin-right: 8px;
+  }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option {
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    cursor: pointer; transition: all .15s;
+    font-size: 14px; color: #d8dafc;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .option .opt-mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%; font-size: 11px; font-weight: 600;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+  }
+  .option:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+  .option.selected { background: rgba(167,139,250,0.18); border-color: #a78bfa; color: #fff; }
+  .option.selected .opt-mark { background: #a78bfa; border-color: #a78bfa; color: #fff; }
+  .option.correct {
+    background: rgba(74,222,128,0.16); border-color: #4ade80; color: #fff;
+  }
+  .option.correct .opt-mark { background: #4ade80; border-color: #4ade80; color: #052e16; }
+  .option.wrong {
+    background: rgba(244,63,94,0.18); border-color: #f43f5e; color: #fff;
+  }
+  .option.wrong .opt-mark { background: #f43f5e; border-color: #f43f5e; color: #fff; }
+  .option.disabled { cursor: default; pointer-events: none; }
+  .explain {
+    margin-top: 8px; padding: 10px 14px;
+    background: rgba(56,189,248,0.08);
+    border-left: 3px solid #38bdf8;
+    border-radius: 8px;
+    font-size: 13px; color: #d8dafc; line-height: 1.6;
+    display: none;
+  }
+  .explain.show { display: block; }
+
+  .quiz-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .quiz-status { font-size: 13px; color: #b4b8e0; }
+  .quiz-status.pass { color: #4ade80; font-weight: 600; }
+  .quiz-status.fail { color: #f43f5e; font-weight: 500; }
+
+  /* Certificate */
+  .cert-page {
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px;
+  }
+  .cert {
+    position: relative;
+    background: linear-gradient(135deg, #1a1040 0%, #2a1855 50%, #1e1145 100%);
+    border: 2px solid transparent;
+    border-radius: 24px;
+    padding: 60px 50px;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .cert::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(244,114,182,0.18), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(56,189,248,0.18), transparent 40%),
+      radial-gradient(circle at 50% 90%, rgba(167,139,250,0.18), transparent 50%);
+    pointer-events: none;
+  }
+  .cert::after {
+    content: ''; position: absolute; inset: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; pointer-events: none;
+  }
+  .cert > * { position: relative; z-index: 1; }
+  .cert .cert-emoji { font-size: 72px; margin-bottom: 12px; }
+  .cert .cert-title { font-size: 14px; letter-spacing: 6px; color: #b4b8e0; margin-bottom: 8px; }
+  .cert .cert-h {
+    font-size: 32px; font-weight: 700; margin: 0 0 32px;
+    background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .cert .cert-name {
+    font-size: 42px; font-weight: 700; color: #fff; margin: 16px 0;
+    border-bottom: 2px solid rgba(255,255,255,0.2);
+    display: inline-block; padding: 0 40px 8px;
+  }
+  .cert .cert-body {
+    font-size: 16px; color: #d8dafc; line-height: 1.9; margin: 24px auto;
+    max-width: 560px;
+  }
+  .cert .cert-meta {
+    display: flex; justify-content: space-between; margin-top: 40px;
+    font-size: 13px; color: #b4b8e0; padding: 0 20px;
+  }
+  .cert .cert-meta .label { color: #8a8eb8; font-size: 11px; margin-bottom: 4px; }
+  .cert .cert-sig { color: #fff; font-weight: 600; font-size: 16px; }
+
+  .cert-actions { text-align: center; margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+    padding: 12px 22px;
+    background: rgba(15,16,41,0.95);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 100px;
+    color: #fff; font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    opacity: 0; pointer-events: none;
+    transition: all .3s;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Empty state under cert */
+  .cert-locked {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed rgba(255,255,255,0.12);
+    border-radius: 16px; padding: 32px;
+    text-align: center; color: #b4b8e0;
+  }
+
+  @media (max-width: 720px) {
+    .hub { padding: 20px 16px; }
+    .hub-header { padding: 12px 16px; }
+    .progress-bar { width: 120px; }
+    .hub-hero h1 { font-size: 28px; }
+    .module-page { padding: 20px 16px 60px; }
+    .module-header h1 { font-size: 24px; }
+    .cert { padding: 40px 24px; }
+    .cert .cert-name { font-size: 30px; padding: 0 20px 6px; }
+  }
+
+  /* Print: cert nice on paper */
+  @media print {
+    body { background: #fff; }
+    .hub-header, .module-back, .cert-actions, .btn { display: none !important; }
+    .cert { box-shadow: none; border: 2px solid #1a1040; color: #1a1040; background: #fff; }
+    .cert .cert-name, .cert .cert-h { color: #1a1040 !important; -webkit-text-fill-color: #1a1040 !important; background: none !important; }
+    .cert .cert-body, .cert .cert-meta, .cert .cert-title { color: #555 !important; }
+  }
+
+  .hidden { display: none !important; }
+
+  /* ===== Org chart (in 公司与文化) ===== */
+  .org-ceo {
+    text-align: center; margin: 12px 0;
+  }
+  .org-ceo .ceo-card {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(244,114,182,0.12));
+    border: 1px solid rgba(167,139,250,0.35);
+    border-radius: 14px;
+  }
+  .org-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
+    color: #1a1040; flex-shrink: 0;
+  }
+  .org-avatar.lg { width: 56px; height: 56px; font-size: 20px; }
+  .org-line {
+    height: 24px; width: 2px;
+    background: linear-gradient(180deg, rgba(167,139,250,0.6), rgba(167,139,250,0.05));
+    margin: 4px auto;
+  }
+  .org-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .org-leader {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top: 3px solid var(--lead-color, #a78bfa);
+    border-radius: 14px;
+    padding: 16px 14px;
+  }
+  .org-leader .row1 {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .org-leader .name { font-size: 16px; font-weight: 700; color: #fff; }
+  .org-leader .role { font-size: 12px; color: #b4b8e0; }
+  .org-leader .alias { font-size: 11px; color: #8a8eb8; margin-top: 2px; }
+  .org-leader .teams {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;
+  }
+  .org-leader .team-chip {
+    padding: 3px 8px; font-size: 11px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px; color: #d8dafc;
+  }
+
+  /* ===== Tool kind cards ===== */
+  .card.tool::before { background: var(--accent, #38bdf8); }
+  .card.tool .badge.tool {
+    background: rgba(56,189,248,0.18); color: #7dd3fc;
+  }
+
+  /* ===== Flow map ===== */
+  .flowmap {
+    display: flex; flex-direction: column; gap: 0;
+    margin: 16px 0;
+  }
+  .flow-stage {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: 4px solid var(--stage-color, #38bdf8);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .flow-stage .num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--stage-color, #38bdf8);
+    color: #0f1029; font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow-stage .title { font-size: 15px; font-weight: 600; color: #fff; }
+  .flow-stage .owner { font-size: 11px; color: #8a8eb8; margin-top: 2px; }
+  .flow-stage .desc { font-size: 13px; color: #d8dafc; margin-top: 6px; line-height: 1.6; }
+  .flow-arrow {
+    text-align: center; font-size: 16px; color: rgba(167,139,250,0.5);
+    line-height: 1; padding: 4px 0;
+  }
+  .flow-loop {
+    margin-top: 10px; padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(244,114,182,0.06));
+    border: 1px dashed rgba(251,191,36,0.3);
+    border-radius: 10px; font-size: 13px; color: #fcd34d;
+  }
+
+  /* ===== Glossary ===== */
+  .glossary-search {
+    position: sticky; top: 60px; z-index: 5;
+    margin: 8px 0 16px;
+    padding: 10px 14px;
+    background: rgba(15,16,41,0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .glossary-search input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #fff; font-size: 14px; font-family: inherit;
+  }
+  .glossary-search .icon { color: #8a8eb8; font-size: 14px; }
+  .glossary-cat-tabs {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
+  }
+  .glossary-cat-tab {
+    padding: 5px 12px; font-size: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px; cursor: pointer;
+    color: #b4b8e0; transition: all .15s;
+  }
+  .glossary-cat-tab:hover { background: rgba(255,255,255,0.1); }
+  .glossary-cat-tab.active {
+    background: rgba(56,189,248,0.2); border-color: #38bdf8; color: #fff;
+  }
+  .glossary-list {
+    display: grid; gap: 10px;
+  }
+  .glossary-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-left: 3px solid var(--cat-color, #38bdf8);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .glossary-item .term {
+    font-size: 14px; font-weight: 600; color: #fff;
+  }
+  .glossary-item .term .cat {
+    display: inline-block;
+    margin-left: 8px; padding: 1px 7px;
+    font-size: 10px; font-weight: 500;
+    background: rgba(255,255,255,0.08);
+    color: #b4b8e0; border-radius: 100px;
+    vertical-align: 2px;
+  }
+  .glossary-item .def {
+    font-size: 13px; color: #d8dafc; margin-top: 4px; line-height: 1.6;
+  }
+  .glossary-empty {
+    text-align: center; padding: 32px;
+    color: #8a8eb8; font-size: 13px;
+  }
+
+  /* ===== Helpdesk ===== */
+  .helpdesk-table {
+    display: grid; gap: 8px;
+  }
+  .helpdesk-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: all .15s;
+  }
+  .helpdesk-row:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.16);
+  }
+  .helpdesk-q {
+    font-size: 13px; color: #d8dafc; line-height: 1.5;
+    display: flex; gap: 8px;
+  }
+  .helpdesk-q .icon { flex-shrink: 0; }
+  .helpdesk-a {
+    font-size: 13px; color: #fff; font-weight: 500; line-height: 1.5;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .helpdesk-a .arrow { color: #a78bfa; flex-shrink: 0; }
+  .helpdesk-a strong { color: #c4b5fd; }
+  @media (max-width: 600px) {
+    .helpdesk-row { grid-template-columns: 1fr; gap: 6px; }
+    .helpdesk-a { padding-left: 18px; }
+  }
+
+  /* ===== Checklist ===== */
+  .checklist-progress {
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px; height: 8px;
+    overflow: hidden; margin: 8px 0 16px;
+  }
+  .checklist-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #4ade80);
+    transition: width .3s;
+  }
+  .checklist-section {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+  }
+  .checklist-section h3 {
+    margin: 0 0 10px; font-size: 14px; color: #c4b5fd;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .checklist-section h3 .stage-prog {
+    font-size: 11px; color: #8a8eb8; font-weight: 400;
+  }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 4px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background .15s;
+  }
+  .check-item:hover { background: rgba(255,255,255,0.04); }
+  .check-item input[type="checkbox"] {
+    margin: 2px 0 0; flex-shrink: 0;
+    width: 18px; height: 18px;
+    accent-color: #4ade80;
+    cursor: pointer;
+  }
+  .check-item .ci-text {
+    font-size: 14px; color: #d8dafc; line-height: 1.5;
+  }
+  .check-item.done .ci-text {
+    color: #8a8eb8; text-decoration: line-through;
+  }
+
+  /* ===== Admin Mode ===== */
+  .admin-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 100px;
+    background: linear-gradient(135deg, #fbbf24, #f472b6);
+    color: #1a1040; font-weight: 700; font-size: 12px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 10px rgba(251,191,36,0.3);
+  }
+  .admin-banner {
+    background: linear-gradient(135deg, rgba(251,191,36,0.10), rgba(244,114,182,0.08));
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 13px; color: #fcd34d;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .admin-entry {
+    margin-top: 16px; text-align: center;
+    font-size: 12px; color: #6b6f9a;
+  }
+  .admin-entry a {
+    color: #8a8eb8; cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(255,255,255,0.2);
+    padding-bottom: 1px;
+    transition: all .2s;
+  }
+  .admin-entry a:hover { color: #fbbf24; border-bottom-color: #fbbf24; }
+
+  /* ===== Theme Toggle Button ===== */
+  .theme-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 50;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    transition: all .25s;
+    color: #fff;
+    user-select: none;
+  }
+  .theme-toggle:hover {
+    background: rgba(255,255,255,0.18);
+    transform: scale(1.08) rotate(8deg);
+  }
+
+  /* ===== LIGHT MODE ===== */
+  body.light {
+    background: linear-gradient(135deg, #fafaff 0%, #f1ebff 35%, #fde8f3 70%, #e8f4ff 100%);
+    color: #2a1f5c;
+  }
+  body.light #bgCanvas { opacity: 0.45; }
+
+  body.light .theme-toggle {
+    background: rgba(26,16,64,0.06);
+    border-color: rgba(26,16,64,0.14);
+    color: #1a1040;
+    box-shadow: 0 6px 20px rgba(167,139,250,0.18);
+  }
+  body.light .theme-toggle:hover { background: rgba(26,16,64,0.12); }
+
+  /* Hub header */
+  body.light .hub-header {
+    background: rgba(255,255,255,0.85);
+    border-bottom-color: rgba(26,16,64,0.08);
+  }
+  body.light .hub-header .meta { color: #5b5680; }
+  body.light .progress-bar { background: rgba(26,16,64,0.10); }
+
+  /* Welcome */
+  body.light .welcome .sub { color: #5b5680; }
+  body.light .welcome .slogan { color: #8a85a8; }
+  body.light .welcome-card {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(26,16,64,0.08);
+    box-shadow: 0 8px 32px rgba(167,139,250,0.18);
+  }
+  body.light .welcome-card h2 { color: #1a1040; }
+  body.light .welcome-card p { color: #5b5680; }
+  body.light .form-row label { color: #5b5680; }
+  body.light .form-row input,
+  body.light .form-row select {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(26,16,64,0.15);
+    color: #1a1040;
+  }
+  body.light .form-row input:focus,
+  body.light .form-row select:focus {
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.20);
+  }
+  body.light .form-row select option { background: #fff; color: #1a1040; }
+
+  /* Hub hero */
+  body.light .hub-hero p { color: #5b5680; }
+  body.light .section-title h2 { color: #1a1040; }
+  body.light .section-title .desc { color: #8a85a8; }
+
+  /* Cards */
+  body.light .card {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .card:hover:not(.locked) {
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 12px 32px rgba(167,139,250,0.18);
+  }
+  body.light .card h3 { color: #1a1040; }
+  body.light .card .card-sub { color: #5b5680; }
+  body.light .card .card-foot { color: #8a85a8; }
+  body.light .card.completed {
+    background: rgba(74,222,128,0.10);
+    border-color: rgba(74,222,128,0.45);
+  }
+
+  /* Buttons */
+  body.light .btn.secondary {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(26,16,64,0.12);
+    color: #1a1040;
+  }
+  body.light .btn.secondary:hover { background: #fff; }
+  body.light .btn.ghost { color: #5b5680; }
+  body.light .btn.ghost:hover { background: rgba(167,139,250,0.14); color: #1a1040; }
+
+  /* Module page */
+  body.light .module-back {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+    color: #5b5680;
+  }
+  body.light .module-back:hover { background: rgba(255,255,255,0.95); }
+  body.light .module-header { border-bottom-color: rgba(26,16,64,0.08); }
+  body.light .module-header h1 { color: #1a1040; }
+  body.light .module-header .module-desc { color: #5b5680; }
+
+  /* Blocks */
+  body.light .block {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .block h2 { color: #1a1040; }
+  body.light .block h3 { color: #6b21a8; }
+  body.light .block p, body.light .block li { color: #2a1f5c; }
+  body.light .block strong { color: #1a1040; }
+  body.light .block em { color: #b45309; }
+
+  /* Callouts */
+  body.light .callout {
+    background: linear-gradient(135deg, rgba(167,139,250,0.14), rgba(244,114,182,0.08));
+    color: #2a1f5c;
+  }
+  body.light .callout.warning {
+    background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(244,114,182,0.08));
+    color: #5a3a00;
+  }
+  body.light .callout.info {
+    background: linear-gradient(135deg, rgba(56,189,248,0.14), rgba(167,139,250,0.08));
+    color: #134e6e;
+  }
+
+  /* Tables */
+  body.light table.tbl th { background: rgba(167,139,250,0.20); color: #1a1040; }
+  body.light table.tbl td { color: #2a1f5c; }
+  body.light table.tbl th, body.light table.tbl td { border-bottom-color: rgba(26,16,64,0.10); }
+
+  /* City + value cards */
+  body.light .city-card,
+  body.light .value-chip {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .city-card .city-name,
+  body.light .value-chip .name { color: #1a1040; }
+  body.light .city-card .city-role,
+  body.light .value-chip .desc { color: #5b5680; }
+
+  /* Org chart */
+  body.light .org-ceo .ceo-card {
+    background: linear-gradient(135deg, rgba(167,139,250,0.20), rgba(244,114,182,0.14));
+    border-color: rgba(167,139,250,0.45);
+  }
+  body.light .org-leader {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .org-leader .name { color: #1a1040; }
+  body.light .org-leader .role { color: #5b5680; }
+  body.light .org-leader .alias { color: #8a85a8; }
+  body.light .org-leader .team-chip {
+    background: rgba(167,139,250,0.14);
+    color: #2a1f5c;
+  }
+
+  /* Quiz */
+  body.light .quiz {
+    background: linear-gradient(135deg, rgba(167,139,250,0.10), rgba(56,189,248,0.08));
+    border-color: rgba(167,139,250,0.30);
+  }
+  body.light .quiz h2 { color: #1a1040; }
+  body.light .quiz-sub { color: #5b5680; }
+  body.light .question .qtext { color: #1a1040; }
+  body.light .question { border-top-color: rgba(26,16,64,0.06); }
+  body.light .quiz-actions { border-top-color: rgba(26,16,64,0.06); }
+  body.light .option {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(26,16,64,0.10);
+    color: #2a1f5c;
+  }
+  body.light .option:hover { background: #fff; border-color: rgba(26,16,64,0.20); }
+  body.light .option.selected { background: rgba(167,139,250,0.25); border-color: #a78bfa; color: #1a1040; }
+  body.light .option .opt-mark {
+    border-color: rgba(26,16,64,0.30);
+    background: rgba(255,255,255,0.85);
+    color: #2a1f5c;
+  }
+  body.light .quiz-status { color: #5b5680; }
+  body.light .explain { color: #2a1f5c; background: rgba(56,189,248,0.10); }
+
+  /* Glossary */
+  body.light .glossary-search {
+    background: rgba(255,255,255,0.92);
+    border-color: rgba(26,16,64,0.12);
+  }
+  body.light .glossary-search input { color: #1a1040; }
+  body.light .glossary-search input::placeholder { color: #8a85a8; }
+  body.light .glossary-search .icon { color: #8a85a8; }
+  body.light .glossary-cat-tab {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.10);
+    color: #5b5680;
+  }
+  body.light .glossary-cat-tab:hover { background: #fff; color: #1a1040; }
+  body.light .glossary-cat-tab.active {
+    background: rgba(56,189,248,0.22);
+    color: #1a1040; border-color: rgba(56,189,248,0.6);
+  }
+  body.light .glossary-item {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .glossary-item .term { color: #1a1040; }
+  body.light .glossary-item .term .cat { background: rgba(26,16,64,0.08); color: #5b5680; }
+  body.light .glossary-item .def { color: #2a1f5c; }
+  body.light .glossary-empty { color: #8a85a8; }
+
+  /* Helpdesk */
+  body.light .helpdesk-row {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .helpdesk-row:hover { background: #fff; }
+  body.light .helpdesk-q { color: #2a1f5c; }
+  body.light .helpdesk-a { color: #1a1040; }
+  body.light .helpdesk-a strong { color: #6b21a8; }
+
+  /* Checklist */
+  body.light .checklist-section {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .checklist-section h3 { color: #6b21a8; }
+  body.light .checklist-section h3 .stage-prog { color: #8a85a8; }
+  body.light .check-item .ci-text { color: #2a1f5c; }
+  body.light .check-item.done .ci-text { color: #8a85a8; }
+  body.light .check-item:hover { background: rgba(167,139,250,0.10); }
+  body.light .checklist-progress { background: rgba(26,16,64,0.10); }
+
+  /* Flow map */
+  body.light .flow-stage {
+    background: rgba(255,255,255,0.75);
+    border-color: rgba(26,16,64,0.08);
+  }
+  body.light .flow-stage .title { color: #1a1040; }
+  body.light .flow-stage .owner { color: #8a85a8; }
+  body.light .flow-stage .desc { color: #2a1f5c; }
+  body.light .flow-arrow { color: rgba(167,139,250,0.7); }
+  body.light .flow-loop {
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(244,114,182,0.08));
+    color: #92400e;
+  }
+
+  /* Toast */
+  body.light .toast {
+    background: rgba(255,255,255,0.96);
+    color: #1a1040;
+    border-color: rgba(26,16,64,0.12);
+    box-shadow: 0 8px 24px rgba(167,139,250,0.20);
+  }
+
+  /* Cert */
+  body.light .cert {
+    background: linear-gradient(135deg, #ffffff 0%, #f6f0ff 50%, #fdeef6 100%);
+    box-shadow: 0 20px 60px rgba(167,139,250,0.18);
+    border-color: rgba(167,139,250,0.20);
+  }
+  body.light .cert::after { border-color: rgba(26,16,64,0.10); }
+  body.light .cert .cert-title { color: #5b5680; }
+  body.light .cert .cert-name { color: #1a1040; border-bottom-color: rgba(26,16,64,0.20); }
+  body.light .cert .cert-body { color: #2a1f5c; }
+  body.light .cert .cert-meta { color: #5b5680; }
+  body.light .cert .cert-meta .label { color: #8a85a8; }
+  body.light .cert .cert-sig { color: #1a1040; }
+  body.light .cert-locked {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(26,16,64,0.10);
+    color: #5b5680;
+  }
+
+  /* Admin */
+  body.light .admin-entry { color: #8a85a8; }
+  body.light .admin-entry a { color: #5b5680; border-bottom-color: rgba(26,16,64,0.20); }
+  body.light .admin-entry a:hover { color: #b45309; border-bottom-color: #b45309; }
+  body.light .admin-banner {
+    background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(244,114,182,0.10));
+    color: #92400e; border-color: rgba(251,191,36,0.45);
+  }
+
+  /* Badges in light mode */
+  body.light .badge.locked { background: rgba(26,16,64,0.08); color: #8a85a8; }
+  body.light .badge.next { background: rgba(167,139,250,0.20); color: #6b21a8; }
+  body.light .badge.optional { background: rgba(56,189,248,0.18); color: #0c4a6e; }
+  body.light .badge.required { background: rgba(244,114,182,0.18); color: #831843; }
+  body.light .badge.tool { background: rgba(56,189,248,0.20); color: #0c4a6e; }
+
+  /* Lock icon */
+  body.light .card.locked { opacity: 0.55; }
+  body.light .card-lock-icon { color: #8a85a8; }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- Shared SVG gradient defs (referenced by inline logos) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="vsLogoGradient" x1="10%" y1="90%" x2="100%" y2="10%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="35%" stop-color="#a78bfa"/>
+      <stop offset="65%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div id="app"></div>
+
+<button id="themeToggle" class="theme-toggle" title="切换日间 / 夜间">🌙</button>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =====================================================================
+   视感 · Last Day · 离职交接
+   单文件 HTML / 数据 + 渲染 + 进度持久化 (localStorage)
+   ===================================================================== */
+
+/* ---------- DATA: Departments ---------- */
+
+const DEPARTMENTS = [
+  { id: 'product',  label: '产品研发部',     emoji: '🔧', color: 'var(--c-product)' },
+  { id: 'supply',   label: '供应链交付部',   emoji: '📦', color: 'var(--c-supply)' },
+  { id: 'cn',       label: '国内销售部',     emoji: '🇨🇳', color: 'var(--c-cn)' },
+  { id: 'overseas', label: '海外销售部',     emoji: '🌍', color: 'var(--c-overseas)' },
+];
+
+const MODULES = [
+  /* ============ 通用交接 (3) ============ */
+  {
+    id: 'g1', kind: 'general', emoji: '🤝', accent: 'var(--c-general)',
+    title: '工作交接',
+    sub: '项目 · SOP · 联系人 · 历史决策',
+    tag: '通用',
+    blocks: [
+      { type: 'block', title: '交接四类内容',
+        body: `<table class="tbl">
+          <thead><tr><th>类别</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><strong>① 在做的事</strong></td><td>项目状态 / 下一步 / 风险点 / 接手人</td></tr>
+            <tr><td><strong>② 怎么做的</strong></td><td>SOP 文档 + 飞书云文档链接 + 操作要点</td></tr>
+            <tr><td><strong>③ 跟谁打交道</strong></td><td>客户 / 供应商 / 达人 / 跨部门同事 — 联系方式 + 关系背景</td></tr>
+            <tr><td><strong>④ 为什么这么做</strong></td><td>历史决策档案 — 当年为什么选 A 没选 B</td></tr>
+          </tbody>
+        </table>` },
+
+      { type: 'block', title: '在岗带新 · 三步',
+        body: `<ol>
+          <li><strong>看一遍</strong> — 你做一遍给接班人看</li>
+          <li><strong>陪一遍</strong> — 接班人做，你在旁边</li>
+          <li><strong>放一遍</strong> — 接班人独立做，遇大事再 ping 你</li>
+        </ol>
+        <p style="color:#b4b8e0;font-size:13px;">具体节奏跟直属上级商量。</p>` },
+
+      { type: 'block', title: '《工作交接表》',
+        body: `<ul>
+          <li>HR 发模板</li>
+          <li>填完上传到飞书云文档</li>
+          <li>直属上级 + 接班人共同确认</li>
+        </ul>` },
+    ],
+  },
+
+  {
+    id: 'g2', kind: 'general', emoji: '🔒', accent: 'var(--c-general)',
+    title: '设备 & 账号',
+    sub: '回收 · 转交 · 注销',
+    tag: '通用',
+    blocks: [
+      { type: 'block', title: '设备归还 (行政部对接)',
+        body: `<ul>
+          <li>笔记本 + 电源 + 显示器 + 键鼠 + 扩展坞 + 耳机</li>
+          <li>门禁卡 / 工牌</li>
+          <li>公司 SIM 卡 / 移动 WiFi (如有)</li>
+          <li>测试机 + 工程样品 (如有)</li>
+        </ul>` },
+
+      { type: 'block', title: '账号清单',
+        body: `<table class="tbl">
+          <thead><tr><th>类别</th><th>处理</th></tr></thead>
+          <tbody>
+            <tr><td>飞书云文档 (你创建的)</td><td>转交所有权给接班人 / 上级</td></tr>
+            <tr><td>钉钉 / 飞书账号</td><td>行政在最后工作日注销</td></tr>
+            <tr><td>Git / Figma / 业务后台</td><td>跟接班人 / 部门负责人对清单</td></tr>
+            <tr><td>亚马逊 / Shopify / 广告账户 / 银行 U 盾</td><td>跟接班人 / 部门负责人对清单</td></tr>
+            <tr><td>外部群 (工厂 / 客户 / 达人)</td><td>让接班人加入，你再退出</td></tr>
+          </tbody>
+        </table>` },
+
+      { type: 'block', title: '工作邮箱',
+        body: `<ul>
+          <li>设置自动回复 + 转发给接班人</li>
+          <li>持续 ≥ 1 个月</li>
+        </ul>` },
+    ],
+  },
+
+  {
+    id: 'g3', kind: 'general', emoji: '💰', accent: 'var(--c-general)',
+    title: '财务 & 社保',
+    sub: '工资 · 报销 · 五险一金 · 文件',
+    tag: '通用',
+    blocks: [
+      { type: 'block', title: '工资 & 报销',
+        body: `<ul>
+          <li><strong>末月工资</strong>：按正常发薪节奏 (每月 10 号)。工资卡先别注销。</li>
+          <li><strong>报销</strong>：未冲账发票最后工作日前交财务。</li>
+          <li><strong>年终 / 绩效</strong>：跟人力书面确认能拿到的部分。</li>
+        </ul>` },
+
+      { type: 'block', title: '五险一金',
+        body: `<ul>
+          <li>视感按规定停缴。</li>
+          <li>跨城转移 → 找人力开《社保 / 公积金转移单》。</li>
+          <li>跟下家衔接，断档不超过 3 个月对买房 / 落户 / 摇号资格影响最小。</li>
+        </ul>` },
+
+      { type: 'block', title: '文件 (人力出具)',
+        body: `<ul>
+          <li><strong>离职证明</strong>：下家入职 / 落户 / 申请贷款都要用。</li>
+          <li><strong>《社保 / 公积金转移单》</strong>：跨城换工作必备。</li>
+          <li><strong>个税</strong>：次年 3-6 月做年度汇算清缴 (个人所得税 APP)。</li>
+        </ul>` },
+
+      { type: 'block', title: 'Exit Interview',
+        body: `<ul>
+          <li>HR 会约 30-45 分钟。</li>
+          <li>一般安排在最后一两天。</li>
+        </ul>` },
+    ],
+  },
+
+  /* ============ 部门交接 (4 — 只显示自己) ============ */
+  {
+    id: 'd_product', kind: 'department', dept: 'product',
+    emoji: '🔧', accent: 'var(--c-product)',
+    title: '产研中心',
+    sub: '部门交接清单',
+    tag: '部门',
+    blocks: [
+      { type: 'block', title: '核心几件事',
+        body: `<ul>
+          <li><strong>代码仓库</strong>：转交 admin；个人 fork 删除；CI / 部署文档简单写一份"接手指南"</li>
+          <li><strong>Figma 源文件</strong>：转交所有权；标注上线版 vs 探索稿</li>
+          <li><strong>硬件文档 + BOM</strong>：归档到飞书；样品 / 工程样退仓库</li>
+          <li><strong>工厂 / 供应商联系人</strong>：人名 + 关系背景 (脾气、痛点)</li>
+          <li><strong>历史决策档案</strong>：当年为什么这么设计 / 为什么选这个供应商</li>
+        </ul>` },
+    ],
+  },
+
+  {
+    id: 'd_supply', kind: 'department', dept: 'supply',
+    emoji: '📦', accent: 'var(--c-supply)',
+    title: '交付中心',
+    sub: '部门交接清单',
+    tag: '部门',
+    blocks: [
+      { type: 'block', title: '核心几件事',
+        body: `<ul>
+          <li><strong>当前库存</strong>：发起一次盘点 — 给接班人数据起点</li>
+          <li><strong>供应商联系人 + 当前合同</strong>：人名 + 公司 + 角色 + 当前价格 / 交期</li>
+          <li><strong>跟工厂的外部群</strong>：让接班人加入再退出</li>
+          <li><strong>认证进度 (CE / FCC / 3C 等)</strong>：已发 / 在审 / 过期需续</li>
+          <li><strong>未结案的退货 / 返修 / 品质工单</strong>：清单给接班人</li>
+        </ul>` },
+    ],
+  },
+
+  {
+    id: 'd_cn', kind: 'department', dept: 'cn',
+    emoji: '🇨🇳', accent: 'var(--c-cn)',
+    title: '国内电商',
+    sub: '部门交接清单',
+    tag: '部门',
+    blocks: [
+      { type: 'block', title: '核心几件事',
+        body: `<ul>
+          <li><strong>直播间排播</strong>：未来 1 个月排班 + 主播 / 场控 / 客服分配</li>
+          <li><strong>话术库 + 福袋活动</strong>：当前生效活动 + 平台审批进度</li>
+          <li><strong>达人合作清单</strong>：在合作 / 待寄样 / 拍摄中 / 待发布 各档</li>
+          <li><strong>历史 ROI 数据</strong>：哪个达人有效、哪个不行</li>
+          <li><strong>渠道商合同 + 分成</strong>：谁有独家、谁没有</li>
+        </ul>` },
+    ],
+  },
+
+  {
+    id: 'd_overseas', kind: 'department', dept: 'overseas',
+    emoji: '🌍', accent: 'var(--c-overseas)',
+    title: '海外电商',
+    sub: '部门交接清单',
+    tag: '部门',
+    blocks: [
+      { type: 'block', title: '核心几件事',
+        body: `<ul>
+          <li><strong>亚马逊 (Seller Central + Ads Console)</strong>：多站点权限交接</li>
+          <li><strong>Shopify + 支付通道 (PayPal / Stripe)</strong>：绑定从个人邮箱切到公司邮箱 / 公司主体</li>
+          <li><strong>广告账户 (Facebook / Google / TikTok)</strong>：先确认接班人能进，再退出自己</li>
+          <li><strong>海外大客户 / 经销商</strong>：联系人 + 合同 + 独家性条款 + 邮件历史</li>
+          <li><strong>海外仓 / 跨境物流</strong>：在途批次 + 联系人 + 异常处理 SOP</li>
+        </ul>` },
+    ],
+  },
+
+  /* ============ 工具 (2) ============ */
+  {
+    id: 't_handover', kind: 'tool', emoji: '✅', accent: 'var(--c-general)',
+    title: '离职清单',
+    sub: '所有要做的事 · 一项项打勾',
+    tag: '工具',
+    blocks: [
+      { type: 'checklist', title: '勾选自动保存', body: '' },
+    ],
+  },
+
+  {
+    id: 't_help', kind: 'tool', emoji: '📞', accent: 'var(--c-general)',
+    title: '找谁',
+    sub: '操作问题 · 对接路径',
+    tag: '工具',
+    blocks: [
+      { type: 'block', title: '常见对接表',
+        body: `<div class="helpdesk-table">
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">📋</span>《工作交接表》模板</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>HR</strong></div></div></div>
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">🔒</span>设备归还 / 门禁卡 / 钉钉飞书注销</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>行政部</strong><br><span style="color:#8a8eb8;font-size:11px;">常州 15189783376 · 深圳 13423993135</span></div></div></div>
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">🔑</span>Git / Figma / 业务后台权限</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>所属部门技术 / 业务负责人</strong></div></div></div>
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">💰</span>末月工资 / 报销 / 年终</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>财务 / 薪酬专员</strong></div></div></div>
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">📑</span>离职证明 / 社保 / 公积金转移单</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>人力资源部</strong></div></div></div>
+          <div class="helpdesk-row"><div class="helpdesk-q"><span class="icon">🗓</span>Exit Interview 怎么约</div>
+            <div class="helpdesk-a"><span class="arrow">→</span><div><strong>HR</strong> 主动约</div></div></div>
+        </div>` },
+    ],
+  },
+];
+
+const GLOSSARY_CATEGORIES = [];
+const GLOSSARY = [];
+
+const CHECKLIST_GROUPS = [
+  { id: 'gA', title: '🤝 工作交接', items: [
+    { id: 'a1', text: '《工作交接表》填完 (项目 / SOP / 联系人 / 历史决策)' },
+    { id: 'a2', text: '直属上级敲定接班人 / 临时托管人' },
+    { id: 'a3', text: '在岗带新走完三步：看一遍 → 陪一遍 → 放一遍' },
+    { id: 'a4', text: '跨部门常对接同事告知"我走了找谁"' },
+    { id: 'a5', text: '飞书云文档转交所有权 (不要直接删)' },
+  ]},
+  { id: 'gB', title: '🔒 设备 & 账号', items: [
+    { id: 'b1', text: '设备清单跟行政逐项确认' },
+    { id: 'b2', text: '钉钉 / 飞书账号注销 (行政) ' },
+    { id: 'b3', text: '业务后台 (Git / Figma / 亚马逊 / Shopify / 广告 / 银行) 跟接班人对清单' },
+    { id: 'b4', text: '外部群移交 (工厂 / 客户 / 达人)' },
+    { id: 'b5', text: '工作邮箱设置自动回复 + 转发给接班人 ≥ 1 个月' },
+  ]},
+  { id: 'gC', title: '💰 财务 & 社保', items: [
+    { id: 'c1', text: '所有未冲账发票交财务' },
+    { id: 'c2', text: '跟人力书面确认年终 / 绩效能拿到的部分' },
+    { id: 'c3', text: '收到离职证明 (重要 — 别弄丢)' },
+    { id: 'c4', text: '《社保 / 公积金转移单》拿到 (如需跨城)' },
+    { id: 'c5', text: '末月工资到账 (10 号)' },
+    { id: 'c6', text: '次年 3-6 月做年度汇算清缴 (个税)' },
+  ]},
+  { id: 'gD', title: '🗓 Exit Interview', items: [
+    { id: 'd1', text: '完成 Exit Interview (HR 约 30-45 分钟)' },
+  ]},
+];
+
+/* ---------- STATE & PERSISTENCE ---------- */
+
+const STORE_KEY = 'partykeys_offboarding_v1';
+const ADMIN_PASSWORD = 'AISuperman';
+
+// 视感企业 logo (SVG) — 圆 + 圆角方框互锁 + 紫色小点，渐变 cyan→purple→pink→orange
+const LOGO_SVG = `<svg class="vs-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <rect x="43" y="14" width="46" height="46" rx="9" ry="9" stroke="url(#vsLogoGradient)" stroke-width="6.5" stroke-linejoin="round"/>
+  <circle cx="32" cy="60" r="24" stroke="url(#vsLogoGradient)" stroke-width="6.5"/>
+  <circle cx="78" cy="83" r="5" fill="#a78bfa"/>
+</svg>`;
+
+function defaultState() {
+  return {
+    name: '', dept: '', startedAt: '', completedAt: '',
+    moduleStatus: {}, // id -> { passed, score, attempts }
+    adminMode: false,
+    checklist: {}, // itemId -> true
+    theme: 'dark', // 'dark' | 'light'
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultState();
+    return Object.assign(defaultState(), JSON.parse(raw));
+  } catch (e) { return defaultState(); }
+}
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+let state = loadState();
+
+/* ---------- LOGIC: unlock & progress ---------- */
+
+function generalModules() { return MODULES.filter(m => m.kind === 'general'); }
+function deptModules() { return MODULES.filter(m => m.kind === 'department'); }
+function toolModules() { return MODULES.filter(m => m.kind === 'tool'); }
+function deptModuleFor(deptId) { return MODULES.find(m => m.kind === 'department' && m.dept === deptId); }
+
+function isPassed(id) {
+  return state.moduleStatus[id] && state.moduleStatus[id].passed;
+}
+
+// Unlock rules:
+//   General (g1..g7): sequential — gN requires g{N-1}
+//   Department (d_*): unlocked after ALL general modules passed; user can do their own first.
+function isUnlocked(mod) {
+  if (state.adminMode) return true;
+  if (mod.kind === 'tool') return true; // tools are always available
+  if (mod.kind === 'general') {
+    const idx = generalModules().findIndex(m => m.id === mod.id);
+    if (idx <= 0) return true;
+    const prev = generalModules()[idx - 1];
+    return isPassed(prev.id);
+  }
+  if (mod.kind === 'department') {
+    return generalModules().every(m => isPassed(m.id));
+  }
+  return false;
+}
+
+function isRequired(mod) {
+  // All general are required. Among dept, only the user's own dept is required. Tools never required.
+  if (mod.kind === 'tool') return false;
+  if (mod.kind === 'general') return true;
+  return mod.dept === state.dept;
+}
+
+function progressPct() {
+  const required = MODULES.filter(isRequired);
+  if (required.length === 0) return 0;
+  const done = required.filter(m => isPassed(m.id)).length;
+  return Math.round(done / required.length * 100);
+}
+
+function allRequiredDone() {
+  return MODULES.filter(isRequired).every(m => isPassed(m.id));
+}
+
+/* ---------- RENDER ---------- */
+
+const $app = document.getElementById('app');
+
+function navigate(view, payload) {
+  if (view === 'welcome') return renderWelcome();
+  if (view === 'admin-login') return renderAdminLogin();
+  if (view === 'hub') return renderHub();
+  if (view === 'module') return renderModule(payload);
+  if (view === 'cert') return renderCert();
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderWelcome() {
+  $app.innerHTML = `
+    <div class="welcome">
+      <div class="welcome-logo">${LOGO_SVG}</div>
+      <h1>Last Day</h1>
+      <div class="sub">视感 · 离职交接</div>
+      <div class="slogan">操作清单 · 逐项走完</div>
+
+      <div class="welcome-card">
+        <h2>开始交接</h2>
+        <p>这是离职交接的对接清单。三类通用内容 (<strong>工作交接 / 设备账号 / 财务社保</strong>) + 你所在部门的<strong>交接重点</strong> + 离职清单 + 找谁。<br><br>
+        进度自动保存。HR 也会同步参与。</p>
+
+        <div class="form-row">
+          <label>你的姓名</label>
+          <input id="nameInput" type="text" placeholder="请输入真实姓名（中文/拼音皆可）" value="${escapeHtml(state.name)}" maxlength="20">
+        </div>
+        <div class="form-row">
+          <label>你所在的部门</label>
+          <select id="deptInput">
+            <option value="">— 请选择 —</option>
+            ${DEPARTMENTS.map(d => `<option value="${d.id}" ${state.dept === d.id ? 'selected' : ''}>${d.emoji}  ${d.label}</option>`).join('')}
+          </select>
+        </div>
+
+        <button id="startBtn" class="btn full">进入交接清单 →</button>
+        <div class="admin-entry">
+          <a id="adminEntry">👑 管理者入口</a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    const name = document.getElementById('nameInput').value.trim();
+    const dept = document.getElementById('deptInput').value;
+    if (!name) { toast('请输入姓名'); return; }
+    if (!dept) { toast('请选择你所在的部门'); return; }
+    state.name = name;
+    state.dept = dept;
+    state.adminMode = false;
+    if (!state.startedAt) state.startedAt = new Date().toISOString();
+    saveState();
+    navigate('hub');
+  });
+  document.getElementById('adminEntry').addEventListener('click', () => navigate('admin-login'));
+}
+
+function renderAdminLogin() {
+  $app.innerHTML = `
+    <div class="welcome">
+      <div class="welcome-logo">${LOGO_SVG}</div>
+      <h1>管理者模式</h1>
+      <div class="sub">Admin Access</div>
+      <div class="slogan">查看所有内容 · 不写入进度</div>
+
+      <div class="welcome-card">
+        <h2>请输入管理者密码 🔐</h2>
+        <p>管理者模式可以浏览所有模块的全部内容，不会写入交接进度。适合 HR / 部门负责人 / 合伙人 来核对内容。</p>
+
+        <div class="form-row">
+          <label>密码（仅英文）</label>
+          <input id="pwInput" type="text" placeholder="输入密码" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <button id="adminLoginBtn" class="btn full">进入管理者模式 →</button>
+        <div class="admin-entry">
+          <a id="backToWelcome">← 返回新人入口</a>
+        </div>
+      </div>
+    </div>
+  `;
+  const tryLogin = () => {
+    const pw = document.getElementById('pwInput').value;
+    if (pw === ADMIN_PASSWORD) {
+      state.adminMode = true;
+      if (!state.name) state.name = '管理者';
+      if (!state.dept) state.dept = 'product'; // any default — won't be used for required-flagging in admin mode
+      saveState();
+      toast('👑 已进入管理者模式');
+      navigate('hub');
+    } else {
+      toast('❌ 密码错误');
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  };
+  document.getElementById('adminLoginBtn').addEventListener('click', tryLogin);
+  document.getElementById('pwInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+  document.getElementById('backToWelcome').addEventListener('click', () => navigate('welcome'));
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function renderHub() {
+  const admin = state.adminMode;
+  const pct = progressPct();
+  const doneCnt = MODULES.filter(m => isRequired(m) && isPassed(m.id)).length;
+  const reqTotal = MODULES.filter(isRequired).length;
+
+  const generalCards = generalModules().map(m => moduleCard(m)).join('');
+  const userDeptId = state.dept;
+  const myDeptCard = (!admin && userDeptId) ? moduleCard(deptModuleFor(userDeptId), true) : '';
+  const otherDeptCards = admin
+    ? deptModules().map(m => moduleCard(m)).join('')
+    : deptModules().filter(m => m.dept !== userDeptId).map(m => moduleCard(m)).join('');
+  const toolCards = toolModules().map(m => moduleCard(m)).join('');
+
+  const certUnlocked = allRequiredDone();
+
+  const headerMeta = admin
+    ? `<span class="admin-badge">👑 管理者模式</span>
+       <button class="btn ghost" id="exitAdminBtn" title="退出管理者模式">退出管理者</button>`
+    : `<div class="progress-mini" title="${doneCnt} / ${reqTotal} 模块完成">
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span>${pct}%</span>
+        </div>
+        <span>${escapeHtml(state.name)}</span>
+        <button class="btn ghost" id="resetBtn" title="重置进度">↺ 重置</button>`;
+
+  const hero = admin
+    ? `<div class="hub-hero">
+         <h1>👑 管理者模式</h1>
+         <p>所有模块已解锁、无需做题。点任意卡片直接查看完整内容。</p>
+       </div>
+       <div class="admin-banner">⚙️ 当前为<strong style="color:#fff;margin:0 4px;">管理者预览</strong>视图。离职同伴侧不会受影响 — 你的查看不会写入任何进度。</div>`
+    : `<div class="hub-hero">
+         <h1>${escapeHtml(state.name)} · 离职交接清单</h1>
+         <p>3 个通用模块 + 你部门的交接重点。逐项走完即可。<br><span style="font-size:13px;color:#8a8eb8;">看完一个模块就算 — 进度自动保存。</span></p>
+       </div>`;
+
+  const myDeptSection = admin ? '' : `
+      <div class="section" style="--accent: ${DEPARTMENTS.find(d=>d.id===userDeptId).color}">
+        <div class="section-title">
+          <h2>${DEPARTMENTS.find(d=>d.id===userDeptId).emoji} 部门交接 · ${DEPARTMENTS.find(d=>d.id===userDeptId).label}</h2>
+          <span class="desc">必修</span>
+        </div>
+        <div class="grid">${myDeptCard}</div>
+      </div>`;
+
+  const otherDeptTitle = admin
+    ? `<h2>🏢 部门篇 · 全部 4 个</h2><span class="desc">所有部门概览</span>`
+    : `<h2>🔍 其他部门概览</h2><span class="desc">选修 · 帮你了解整个公司</span>`;
+
+  const certSection = admin ? '' : `
+      <div class="section" style="--accent: var(--c-done)">
+        <div class="section-title">
+          <h2>📄 交接完成单</h2>
+          <span class="desc">所有模块完成后生成 · 可打印 / 签字</span>
+        </div>
+        ${certUnlocked
+          ? `<div class="card completed" id="certCard" style="--accent: var(--c-done); cursor:pointer;">
+                <div class="emoji">📄</div>
+                <h3>查看 · 打印</h3>
+                <div class="card-sub">本人 + 直属上级 + HR 签字归档</div>
+                <div class="card-foot"><span class="badge done">✓ 已就绪</span><span>查看 →</span></div>
+            </div>`
+          : `<div class="cert-locked">还有 <strong>${reqTotal - doneCnt}</strong> 个模块未完成。</div>`
+        }
+      </div>`;
+
+  $app.innerHTML = `
+    <div class="hub-header">
+      <div class="brand">
+        <span class="brand-emoji">${LOGO_SVG}</span>
+        <span class="gradient-text">视感 · Last Day</span>
+      </div>
+      <div class="meta">${headerMeta}</div>
+    </div>
+
+    <div class="hub">
+      ${hero}
+
+      <div class="section" style="--accent: var(--c-general)">
+        <div class="section-title">
+          <h2>📋 通用交接</h2>
+          <span class="desc">${admin ? '3 个模块' : '3 个模块 · 按顺序'}</span>
+        </div>
+        <div class="grid">${generalCards}</div>
+      </div>
+
+      ${myDeptSection}
+
+      ${admin ? `<div class="section" style="--accent: rgba(255,255,255,0.3)">
+        <div class="section-title">
+          <h2>🏢 部门篇 · 全部 4 个</h2>
+          <span class="desc">仅管理者预览可见</span>
+        </div>
+        <div class="grid">${otherDeptCards}</div>
+      </div>` : ''}
+
+      <div class="section" style="--accent: var(--c-general)">
+        <div class="section-title">
+          <h2>🛠️ 速查工具</h2>
+          <span class="desc">随时打开 · 不计入进度</span>
+        </div>
+        <div class="grid">${toolCards}</div>
+      </div>
+
+      ${certSection}
+    </div>
+  `;
+
+  document.querySelectorAll('[data-mid]').forEach(el => {
+    el.addEventListener('click', () => {
+      const mid = el.getAttribute('data-mid');
+      const mod = MODULES.find(m => m.id === mid);
+      if (!isUnlocked(mod)) { toast('🔒 先完成前面的模块'); return; }
+      navigate('module', mid);
+    });
+  });
+  if (admin) {
+    document.getElementById('exitAdminBtn').addEventListener('click', () => {
+      state.adminMode = false;
+      saveState();
+      toast('已退出管理者模式');
+      // After exit, if no name yet (admin came from welcome) go back to welcome
+      if (!state.name || state.name === '管理者') {
+        state.name = ''; state.dept = '';
+        saveState();
+        navigate('welcome');
+      } else {
+        navigate('hub');
+      }
+    });
+  } else {
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('确定要重置交接进度吗？所有勾选会清空。')) {
+        state = defaultState();
+        saveState();
+        navigate('welcome');
+      }
+    });
+    if (document.getElementById('certCard')) {
+      document.getElementById('certCard').addEventListener('click', () => navigate('cert'));
+    }
+  }
+}
+
+function moduleCard(m, isMyDept = false) {
+  const passed = isPassed(m.id);
+  const unlocked = isUnlocked(m);
+  const status = passed ? 'completed' : (unlocked ? 'unlocked' : 'locked');
+
+  // Tools have a different presentation: always available, no quiz, no completion state
+  if (m.kind === 'tool') {
+    return `
+      <div class="card tool" data-mid="${m.id}" style="--accent: ${m.accent}">
+        <div class="emoji">${m.emoji}</div>
+        <h3>${m.title}</h3>
+        <div class="card-sub">${m.sub}</div>
+        <div class="card-foot">
+          <span class="badge tool">🛠 速查工具</span>
+          <span style="color:#8a8eb8;">随时打开 →</span>
+        </div>
+      </div>
+    `;
+  }
+
+  let badge;
+  if (passed) badge = '<span class="badge done">✓ 已完成</span>';
+  else if (!unlocked) badge = '<span class="badge locked">🔒 待解锁</span>';
+  else badge = '<span class="badge next">▶ 可以开始</span>';
+
+  let typeBadge;
+  if (m.kind === 'general') typeBadge = '<span class="badge required">必修</span>';
+  else if (m.dept === state.dept) typeBadge = '<span class="badge required">必修 (你的部门)</span>';
+  else typeBadge = '<span class="badge optional">选修</span>';
+
+  return `
+    <div class="card ${status === 'locked' ? 'locked' : ''} ${passed ? 'completed' : ''}"
+         data-mid="${m.id}" style="--accent: ${m.accent}">
+      ${status === 'locked' ? '<span class="card-lock-icon">🔒</span>' : ''}
+      <div class="emoji">${m.emoji}</div>
+      <h3>${m.title}</h3>
+      <div class="card-sub">${m.sub}</div>
+      <div class="card-foot">${typeBadge}${badge}</div>
+    </div>
+  `;
+}
+
+function renderModule(mid) {
+  const mod = MODULES.find(m => m.id === mid);
+  if (!mod) { navigate('hub'); return; }
+
+  const blockHtml = mod.blocks.map(b => {
+    if (b.type === 'checklist') {
+      return `<div id="checklistRoot"></div>`;
+    }
+    return `<div class="block"><h2>${b.title}</h2>${b.body}</div>`;
+  }).join('');
+
+  const accentVar = mod.accent;
+  const isTool = mod.kind === 'tool';
+  const admin = state.adminMode;
+
+  // Auto-mark passed on view (non-admin, non-tool, not-already-passed)
+  if (!admin && !isTool && !isPassed(mod.id)) {
+    state.moduleStatus[mod.id] = { passed: true, score: 100, attempts: 1 };
+    saveState();
+    if (allRequiredDone() && !state.completedAt) {
+      state.completedAt = new Date().toISOString();
+      saveState();
+      setTimeout(() => toast('✓ 全部模块完成 · 交接完成单已就绪'), 800);
+    }
+  }
+
+  const adminBanner = admin && !isTool
+    ? `<div class="admin-banner">👑 <strong style="color:#fff;">管理者预览</strong> · 你的查看不会写入任何进度。</div>`
+    : '';
+  const headerMeta = admin
+    ? `<span class="admin-badge">👑 管理者</span>
+       <button class="btn ghost" id="hubBtn">⌂ 返回大厅</button>`
+    : `<span>${escapeHtml(state.name)}</span>
+       <button class="btn ghost" id="hubBtn">⌂ 返回大厅</button>`;
+
+  // operational footer — view = done
+  const footer = isTool ? '' : `
+      <div style="margin-top:32px;text-align:center;">
+        <button class="btn" id="footerBackBtn">本模块已看完 · 返回大厅 →</button>
+      </div>`;
+
+  $app.innerHTML = `
+    <div class="hub-header">
+      <div class="brand">
+        <span class="brand-emoji">${LOGO_SVG}</span>
+        <span class="gradient-text">视感 · Last Day</span>
+      </div>
+      <div class="meta">${headerMeta}</div>
+    </div>
+
+    <div class="module-page" style="--accent: ${accentVar}">
+      <a class="module-back" id="backBtn">← 返回大厅</a>
+      ${adminBanner}
+      <div class="module-header">
+        <div class="emoji">${mod.emoji}</div>
+        <div>
+          <span class="module-tag" style="background: ${accentVar}; color: #1a1040; font-weight: 600;">${mod.tag}</span>
+          <h1>${mod.title}</h1>
+          <div class="module-desc">${mod.sub}</div>
+        </div>
+      </div>
+      ${blockHtml}
+      ${footer}
+    </div>
+  `;
+
+  // Tool-specific renderers
+  if (mod.id === 't_handover') renderChecklist();
+
+  document.getElementById('hubBtn').addEventListener('click', () => navigate('hub'));
+  document.getElementById('backBtn').addEventListener('click', () => navigate('hub'));
+  const fbb = document.getElementById('footerBackBtn');
+  if (fbb) fbb.addEventListener('click', () => navigate('hub'));
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Checklist renderer ---------- */
+function renderChecklist() {
+  const root = document.getElementById('checklistRoot');
+  if (!root) return;
+  const total = CHECKLIST_GROUPS.reduce((s, g) => s + g.items.length, 0);
+  const done = CHECKLIST_GROUPS.reduce((s, g) =>
+    s + g.items.filter(it => state.checklist[it.id]).length, 0);
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  const groupsHtml = CHECKLIST_GROUPS.map(g => {
+    const gDone = g.items.filter(it => state.checklist[it.id]).length;
+    const items = g.items.map(it => {
+      const checked = !!state.checklist[it.id];
+      return `<label class="check-item ${checked ? 'done' : ''}" data-iid="${it.id}">
+        <input type="checkbox" ${checked ? 'checked' : ''} data-iid="${it.id}">
+        <span class="ci-text">${it.text}</span>
+      </label>`;
+    }).join('');
+    return `<div class="checklist-section">
+      <h3>${g.title}<span class="stage-prog">${gDone} / ${g.items.length}</span></h3>
+      ${items}
+    </div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="block">
+      <h2>我的离职清单 <span style="font-size:13px;color:#b4b8e0;font-weight:400;">· ${done} / ${total} · ${pct}%</span></h2>
+      <p style="color:#b4b8e0;font-size:13px;">勾选自动保存。慢慢走，没有时间表。</p>
+      <div class="checklist-progress"><div class="checklist-progress-fill" style="width:${pct}%"></div></div>
+      ${groupsHtml}
+    </div>
+  `;
+
+  root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const iid = cb.getAttribute('data-iid');
+      if (cb.checked) state.checklist[iid] = true;
+      else delete state.checklist[iid];
+      saveState();
+      renderChecklist(); // re-render to update progress + label strikethrough
+    });
+  });
+}
+
+function renderCert() {
+  const endStr = (state.completedAt ? new Date(state.completedAt) : new Date())
+    .toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const deptLabel = DEPARTMENTS.find(d => d.id === state.dept).label;
+
+  // Aggregate completed module names for the form body
+  const generalDone = MODULES.filter(m => m.kind === 'general' && isPassed(m.id))
+    .map(m => `<li>✓ ${m.title}</li>`).join('');
+  const myDept = MODULES.find(m => m.kind === 'department' && m.dept === state.dept);
+  const deptDone = myDept && isPassed(myDept.id) ? `<li>✓ ${myDept.title} (${deptLabel}) 部门交接</li>` : '';
+
+  $app.innerHTML = `
+    <div class="hub-header">
+      <div class="brand">
+        <span class="brand-emoji">${LOGO_SVG}</span>
+        <span class="gradient-text">视感 · Last Day</span>
+      </div>
+      <div class="meta">
+        <button class="btn ghost" id="hubBtn">⌂ 返回大厅</button>
+      </div>
+    </div>
+    <div class="cert-page">
+      <div class="cert" id="cert" style="padding:44px 44px;text-align:left;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div class="cert-title" style="letter-spacing:4px;font-size:13px;color:#b4b8e0;">VISIONIC · LAST DAY</div>
+          <div class="cert-h" style="font-size:26px;margin-top:8px;">离职交接完成单</div>
+        </div>
+
+        <table style="width:100%;font-size:14px;color:#d8dafc;line-height:1.9;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#8a8eb8;width:90px;">姓名</td><td style="padding:8px 0;color:#fff;font-weight:600;">${escapeHtml(state.name)}</td></tr>
+          <tr><td style="padding:8px 0;color:#8a8eb8;">部门</td><td style="padding:8px 0;color:#fff;">${deptLabel}</td></tr>
+          <tr><td style="padding:8px 0;color:#8a8eb8;">完成日</td><td style="padding:8px 0;color:#fff;">${endStr}</td></tr>
+        </table>
+
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.12);">
+          <div style="font-size:12px;color:#8a8eb8;margin-bottom:10px;letter-spacing:1px;">已完成交接模块</div>
+          <ul style="list-style:none;padding:0;margin:0;font-size:14px;color:#d8dafc;line-height:1.9;">
+            ${generalDone}
+            ${deptDone}
+          </ul>
+        </div>
+
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.12);display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <div>
+            <div style="font-size:11px;color:#8a8eb8;letter-spacing:1px;margin-bottom:32px;">本人签字</div>
+            <div style="border-bottom:1px solid rgba(255,255,255,0.20);"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#8a8eb8;letter-spacing:1px;margin-bottom:32px;">直属上级 / HR 签字</div>
+            <div style="border-bottom:1px solid rgba(255,255,255,0.20);"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;text-align:center;font-size:11px;color:#8a8eb8;letter-spacing:1px;">
+          深圳视感文化科技有限公司
+        </div>
+      </div>
+      <div class="cert-actions">
+        <button class="btn secondary" id="hubBtn2">返回大厅</button>
+        <button class="btn" id="printBtn">🖨 打印 / 保存 PDF</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('hubBtn').addEventListener('click', () => navigate('hub'));
+  document.getElementById('hubBtn2').addEventListener('click', () => navigate('hub'));
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Toast ---------- */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+/* ---------- Background animation ---------- */
+(function bgAnim() {
+  const c = document.getElementById('bgCanvas');
+  const ctx = c.getContext('2d');
+  let W, H;
+  function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const notes = ['♪','♫','♩','♬','♭','♯'];
+  const particles = [];
+  for (let i = 0; i < 26; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vy: 0.15 + Math.random() * 0.4,
+      vx: (Math.random() - 0.5) * 0.2,
+      size: 12 + Math.random() * 18,
+      hue: 250 + Math.random() * 80,
+      alpha: 0.05 + Math.random() * 0.18,
+      char: notes[Math.floor(Math.random() * notes.length)],
+      r: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.005,
+    });
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.r += p.vr;
+      if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+      if (p.x < -20) p.x = W + 10;
+      if (p.x > W + 20) p.x = -10;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.r);
+      ctx.font = `${p.size}px sans-serif`;
+      ctx.fillStyle = `hsla(${p.hue}, 80%, 75%, ${p.alpha})`;
+      ctx.fillText(p.char, 0, 0);
+      ctx.restore();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ---------- Theme toggle ---------- */
+function applyTheme() {
+  const isLight = state.theme === 'light';
+  document.body.classList.toggle('light', isLight);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+}
+document.getElementById('themeToggle').addEventListener('click', () => {
+  state.theme = state.theme === 'light' ? 'dark' : 'light';
+  saveState();
+  applyTheme();
+});
+applyTheme();
+
+/* ---------- Boot ---------- */
+if (state.adminMode || (state.name && state.dept)) {
+  navigate('hub');
+} else {
+  navigate('welcome');
+}
+
+</script>
+</body>
+</html>
