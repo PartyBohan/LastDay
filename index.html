@@ -43,11 +43,11 @@
     padding: 40px 20px;
   }
   .welcome-logo {
-    font-size: 64px; margin-bottom: 8px;
-    filter: drop-shadow(0 0 20px rgba(167,139,250,0.6));
+    font-size: 64px; margin-bottom: 16px;
+    filter: drop-shadow(0 0 28px rgba(167,139,250,0.5));
     display: flex; align-items: center; justify-content: center;
   }
-  .welcome-logo .vs-logo { width: 88px; height: 88px; display: block; }
+  .welcome-logo .vs-logo { width: 140px; height: 140px; display: block; }
   .welcome h1 {
     font-size: 48px; font-weight: 700; margin: 8px 0 4px;
     background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
@@ -1380,14 +1380,14 @@ const LOGO_SVG = `<svg class="vs-logo" viewBox="0 0 100 100" xmlns="http://www.w
   <defs>
     <linearGradient id="pkLogoGrad" x1="8%" y1="92%" x2="100%" y2="8%">
       <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="32%" stop-color="#a78bfa"/>
-      <stop offset="62%" stop-color="#f472b6"/>
-      <stop offset="100%" stop-color="#fb923c"/>
+      <stop offset="30%" stop-color="#a855f7"/>
+      <stop offset="62%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f97316"/>
     </linearGradient>
   </defs>
-  <circle cx="32" cy="60" r="24" stroke="url(#pkLogoGrad)" stroke-width="6.5"/>
-  <rect x="43" y="14" width="46" height="46" rx="9" ry="9" stroke="url(#pkLogoGrad)" stroke-width="6.5" stroke-linejoin="round"/>
-  <circle cx="87" cy="87" r="4.5" fill="#a78bfa"/>
+  <circle cx="30" cy="62" r="24" stroke="url(#pkLogoGrad)" stroke-width="8" stroke-linecap="round"/>
+  <rect x="42" y="13" width="48" height="48" rx="11" ry="11" stroke="url(#pkLogoGrad)" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="88" cy="88" r="5" fill="#a855f7"/>
 </svg>`;
 
 function defaultState() {
