@@ -1,0 +1,25 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Vercel
+.vercel/
+
+# Node (如果以后加了 build 工具)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 临时文件
+*.tmp
+*.bak
+_*.html
+_*.js
+_*.txt
+
+# 工作中文件 (不上 GitHub)
+draft/
+working/
